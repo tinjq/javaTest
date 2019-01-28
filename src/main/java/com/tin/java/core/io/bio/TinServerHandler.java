@@ -1,8 +1,11 @@
 package com.tin.java.core.io.bio;
 
 import com.tin.utils.ResourceUtil;
+import org.nutz.log.Log;
+import org.nutz.log.Logs;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -12,6 +15,8 @@ import java.net.Socket;
  */
 public class TinServerHandler implements Runnable {
 
+    private static final Log log = Logs.get();
+
     private Socket socket;
 
     public TinServerHandler(Socket socket) {
@@ -20,21 +25,23 @@ public class TinServerHandler implements Runnable {
 
     @Override
     public void run() {
-        BufferedReader in = null;
+        InputStream in = null;
         PrintWriter out = null;
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
-            String content;
-            while ((content = in.readLine()) != null) {
-                // 通过BufferedReader读取一行
-                // 如果已经读到输入流尾部，返回null,退出循环
-                // 如果得到非空值，就尝试计算结果并返回
-                System.out.println("[server] - " + content);
-                // ?? https://blog.csdn.net/lizichen147/article/details/76521417
-                // out.write(content);
-                out.println("server reply：Hello " + content);
+            in = socket.getInputStream();
+            StringBuilder sb = new StringBuilder();
+            byte[] b = new byte[1024];
+            int len;
+            while ((len = in.read(b)) != -1) {
+                sb.append(new String(b, 0, len));
             }
+            String result = sb.toString();
+            log.info("-------> client:" + result);
+
+            out = new PrintWriter(socket.getOutputStream());
+            out.print("Hello " + result);
+            out.flush();
+            socket.shutdownOutput();
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

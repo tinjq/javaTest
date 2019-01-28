@@ -1,41 +1,59 @@
 package com.tin.java.core.io.bio;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
 import com.tin.utils.ResourceUtil;
+import org.nutz.log.Log;
+import org.nutz.log.Logs;
 
 public class TinClient {
-	
-	private static int PORT = 12345;
-	
-	private static String IP = "127.0.0.1";
-	
-	public static void send(String content) {
-		Socket socket = null;
-		PrintWriter out = null;
-		BufferedReader in = null;
-		try {
-			socket = new Socket(IP, PORT);
 
-			out = new PrintWriter(socket.getOutputStream(), true);
-			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    private static final Log log = Logs.get();
 
-			out.println("Client say: " + content);
+    public static String send(String host, int port, String msg) {
+        String result = null;
+        Socket socket = null;
+        PrintWriter out = null;
+        InputStream in = null;
+        try {
+            socket = new Socket(host, port);
 
-			System.out.println("[client] - " + in.readLine());
+            out = new PrintWriter(socket.getOutputStream());
+            out.print(msg);
+            out.flush();
+            socket.shutdownOutput();
 
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			ResourceUtil.closeResource(out, socket);
-		}
-	}
+            in = socket.getInputStream();
+            StringBuilder sb = new StringBuilder();
+            byte[] b = new byte[1024];
+            int len;
+            while ((len = in.read(b)) != -1) {
+                sb.append(new String(b, 0, len));
+            }
+
+            result = sb.toString();
+        } catch (Exception e) {
+            log.info("client error:", e);
+        } finally {
+            ResourceUtil.closeResource(in, out);
+            if (socket != null) {
+                try {
+                    socket.close();
+                    socket = null;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) {
+        String result = send("127.0.0.1", 9999, "aaa\nbbb\nccc");
+        System.out.println(result);
+    }
 
 }

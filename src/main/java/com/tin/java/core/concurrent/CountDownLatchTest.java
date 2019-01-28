@@ -131,7 +131,7 @@ public class CountDownLatchTest {
     }
 
     public static void semaphoreTest() {
-        Semaphore semaphore = new Semaphore(5);
+        final Semaphore semaphore = new Semaphore(5);
         for (int i = 0; i < 8; i++) {
             final int num = i;
             new Thread(new Runnable() {
